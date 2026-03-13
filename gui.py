@@ -13,6 +13,8 @@ class BinPackingGUI:
 
         self.items = []
         self.last_box = None
+        self.unit_system = tk.StringVar(value="Metric (cm)")
+        self.previous_unit_system = "Metric (cm)"
 
         self._build_ui()
 
@@ -61,12 +63,12 @@ class BinPackingGUI:
             state="readonly",
             width=14
         )
-
+        
         self.unit_combo.grid(row=1, column=5, padx=5, pady=5, sticky="w")
-        self.unit_combo.bind("<<ComboboxSelected>>", self.update_unit_labels)
+        self.unit_combo.bind("<<ComboboxSelected>>", self.on_unit_changed)
         ttk.Label(
             bin_frame,
-            text="Display units only. Data is stored internally in metric/unitless values."
+            text="Display units only. Saved data remains metric/unitless internally."
         ).grid(row=2, column=0, columnspan=8, padx=5, pady=(5, 0), sticky="w")
         
         # =========================
@@ -209,7 +211,61 @@ class BinPackingGUI:
         return value / 0.45359237
 
     def fmt_display(self, value):
-        return f"{float(value):.4f}".rstrip("0").rstrip(".")
+        value = round(float(value), 4)
+
+        # Snap very-close whole numbers to the whole number
+        if abs(value - round(value)) < 0.0002:
+            value = round(value)
+
+        return f"{value:.4f}".rstrip("0").rstrip(".")
+        
+    def convert_display_dim_value(self, value, from_unit, to_unit):
+        try:
+            value = float(value)
+        except Exception:
+            return value
+
+        if from_unit == to_unit:
+            return self.fmt_display(value)
+
+        if from_unit == "Imperial (in)" and to_unit == "Metric (cm)":
+            return self.fmt_display(value * 2.54)
+
+        if from_unit == "Metric (cm)" and to_unit == "Imperial (in)":
+            return self.fmt_display(value / 2.54)
+
+        return self.fmt_display(value)
+
+    def convert_display_weight_value(self, value, from_unit, to_unit):
+        try:
+            value = float(value)
+        except Exception:
+            return value
+
+        if from_unit == to_unit:
+            return self.fmt_display(value)
+
+        if from_unit == "Imperial (in)" and to_unit == "Metric (cm)":
+            return self.fmt_display(value * 0.45359237)
+
+        if from_unit == "Metric (cm)" and to_unit == "Imperial (in)":
+            return self.fmt_display(value / 0.45359237)
+
+        return self.fmt_display(value)
+
+    def convert_visible_entry_fields(self, from_unit, to_unit):
+        # Container fields
+        self.bin_w.set(self.convert_display_dim_value(self.bin_w.get(), from_unit, to_unit))
+        self.bin_h.set(self.convert_display_dim_value(self.bin_h.get(), from_unit, to_unit))
+        self.bin_d.set(self.convert_display_dim_value(self.bin_d.get(), from_unit, to_unit))
+        self.bin_weight.set(self.convert_display_weight_value(self.bin_weight.get(), from_unit, to_unit))
+        self.bin_corner.set(self.convert_display_dim_value(self.bin_corner.get(), from_unit, to_unit))
+
+        # Temporary item entry fields
+        self.item_w.set(self.convert_display_dim_value(self.item_w.get(), from_unit, to_unit))
+        self.item_h.set(self.convert_display_dim_value(self.item_h.get(), from_unit, to_unit))
+        self.item_d.set(self.convert_display_dim_value(self.item_d.get(), from_unit, to_unit))
+        self.item_weight.set(self.convert_display_weight_value(self.item_weight.get(), from_unit, to_unit))
 
     def refresh_item_tree(self):
         for row in self.tree.get_children():
@@ -234,33 +290,19 @@ class BinPackingGUI:
                 ),
             )
 
-    def convert_all_display_values(self, from_unit, to_unit):
-        dim_scale, weight_scale = self.get_unit_scale(from_unit, to_unit)
-
-        self.bin_w.set(self.safe_float_convert(self.bin_w.get(), dim_scale))
-        self.bin_h.set(self.safe_float_convert(self.bin_h.get(), dim_scale))
-        self.bin_d.set(self.safe_float_convert(self.bin_d.get(), dim_scale))
-        self.bin_weight.set(self.safe_float_convert(self.bin_weight.get(), weight_scale))
-        self.bin_corner.set(self.safe_float_convert(self.bin_corner.get(), dim_scale))
-
-        self.item_w.set(self.safe_float_convert(self.item_w.get(), dim_scale))
-        self.item_h.set(self.safe_float_convert(self.item_h.get(), dim_scale))
-        self.item_d.set(self.safe_float_convert(self.item_d.get(), dim_scale))
-        self.item_weight.set(self.safe_float_convert(self.item_weight.get(), weight_scale))
-
-        for item in self.items:
-            item["WHD"] = (
-                round(float(item["WHD"][0]) * dim_scale, 4),
-                round(float(item["WHD"][1]) * dim_scale, 4),
-                round(float(item["WHD"][2]) * dim_scale, 4),
-            )
-            item["weight"] = round(float(item["weight"]) * weight_scale, 4)
-
-        self.refresh_item_tree()
-
     # =========================
     # label updates
     # =========================
+
+    def on_unit_changed(self, event=None):
+        selected_unit = self.unit_system.get()
+        previous_unit = self.previous_unit_system
+
+        if selected_unit != previous_unit:
+            self.convert_visible_entry_fields(previous_unit, selected_unit)
+
+        self.update_unit_labels()
+        self.previous_unit_system = selected_unit
 
     def update_unit_labels(self, event=None):
         selected_unit = self.unit_system.get()
@@ -283,7 +325,9 @@ class BinPackingGUI:
         self.item_weight_label.config(text=f"Weight ({weight_unit})")
 
         self.refresh_item_tree()
-        self.previous_unit_system = selected_unit
+
+        if self.last_box:
+            self.render_results(self.last_box)
 
     def _add_labeled_entry(self, parent, label, var, row, col):
         ttk.Label(parent, text=label).grid(row=row, column=col, padx=5, pady=5, sticky="e")

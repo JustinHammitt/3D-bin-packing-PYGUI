@@ -1,9 +1,12 @@
-name: Build Windows EXE
+name: Build SupaBoxPacker EXE
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -23,12 +26,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build EXE with PyInstaller
+      - name: Build EXE
         run: |
-          pyinstaller --onefile --windowed --name BinPackingGUI gui.py
+          pyinstaller --onefile --windowed --collect-all matplotlib --name SupaBoxPacker simple_gui.py
 
-      - name: Upload EXE Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BinPackingGUI-Windows
-          path: dist/BinPackingGUI.exe
+          name: SupaBoxPacker-Windows
+          path: dist/SupaBoxPacker.exe
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: SupaBoxPacker v1.0.${{ github.run_number }}
+          body: |
+            Automated Windows build for SupaBoxPacker.
+
+            Includes:
+            - SupaBoxPacker.exe
+          files: dist/SupaBoxPacker.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

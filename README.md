@@ -73,7 +73,7 @@ You can also save layouts and item templates for reuse.
 ```
 SupaBoxPacker/
 │
-├─ simple_gui.py
+├─ gui.py
 ├─ requirements.txt
 │
 ├─ .github/
@@ -91,7 +91,7 @@ SupaBoxPacker/
 
 ```
 pip install -r requirements.txt
-python simple_gui.py
+python gui.py
 ```
 
 ---
@@ -99,7 +99,7 @@ python simple_gui.py
 # Build Windows EXE
 
 ```
-pyinstaller --onefile --windowed simple_gui.py
+pyinstaller --onefile --windowed gui.py
 ```
 
 ---

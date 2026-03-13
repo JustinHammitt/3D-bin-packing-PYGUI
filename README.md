@@ -12,9 +12,7 @@ Built in Python using:
 
 ---
 
-# Releases
-
-[releases](https://github.com/JustinHammitt/3D-bin-packing-PYGUI/releases)
+# [Releases](https://github.com/JustinHammitt/3D-bin-packing-PYGUI/releases)
 
 ---
 
@@ -40,18 +38,6 @@ Built in Python using:
 ### Packed 3D Diagram
 
 ![3D Diagram](images/gui-diagram.png)
-
-*(screenshots coming soon)*
-
----
-
-# Download
-
-Download the latest executable from:
-
-**Releases → SupaBoxPacker.exe**
-
-No Python installation required.
 
 ---
 

@@ -28,7 +28,7 @@ jobs:
 
       - name: Build EXE
         run: |
-          pyinstaller --onefile --windowed --collect-all matplotlib --name SupaBoxPacker simple_gui.py
+          pyinstaller --onefile --windowed --collect-all matplotlib --name SupaBoxPacker gui.py
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

@@ -41,8 +41,6 @@ Built in Python using:
 
 ![3D Diagram](images/gui-diagram.png)
 
-*(screenshots coming soon)*
-
 ---
 
 # Download

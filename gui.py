@@ -13,6 +13,7 @@ class BinPackingGUI:
 
         self.items = []
         self.last_box = None
+        self.unit_system = tk.StringVar(value="Imperial (in)")
 
         self._build_ui()
 
@@ -34,12 +35,35 @@ class BinPackingGUI:
         self.bin_corner = tk.StringVar(value="0")
 
         self._add_labeled_entry(bin_frame, "Name", self.bin_name, 0, 0)
-        self._add_labeled_entry(bin_frame, "Width", self.bin_w, 0, 2)
-        self._add_labeled_entry(bin_frame, "Height", self.bin_h, 0, 4)
-        self._add_labeled_entry(bin_frame, "Depth", self.bin_d, 0, 6)
-        self._add_labeled_entry(bin_frame, "Max Weight", self.bin_weight, 1, 0)
-        self._add_labeled_entry(bin_frame, "Corner", self.bin_corner, 1, 2)
 
+        self.bin_width_label = ttk.Label(bin_frame, text="Width (in)")
+        self.bin_width_label.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        ttk.Entry(bin_frame, textvariable=self.bin_w, width=14).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+
+        self.bin_height_label = ttk.Label(bin_frame, text="Height (in)")
+        self.bin_height_label.grid(row=0, column=4, padx=5, pady=5, sticky="e")
+        ttk.Entry(bin_frame, textvariable=self.bin_h, width=14).grid(row=0, column=5, padx=5, pady=5, sticky="w")
+
+        self.bin_depth_label = ttk.Label(bin_frame, text="Depth (in)")
+        self.bin_depth_label.grid(row=0, column=6, padx=5, pady=5, sticky="e")
+        ttk.Entry(bin_frame, textvariable=self.bin_d, width=14).grid(row=0, column=7, padx=5, pady=5, sticky="w")
+
+        self.bin_weight_label = ttk.Label(bin_frame, text="Max Weight (lb)")
+        self.bin_weight_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        ttk.Entry(bin_frame, textvariable=self.bin_weight, width=14).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+
+        self._add_labeled_entry(bin_frame, "Corner", self.bin_corner, 1, 2)
+        
+        ttk.Label(bin_frame, text="Units").grid(row=1, column=4, padx=5, pady=5, sticky="e")
+        self.unit_combo = ttk.Combobox(
+            bin_frame,
+            textvariable=self.unit_system,
+            values=["Imperial (in)", "Metric (cm)"],
+            state="readonly",
+            width=14
+        )
+        self.unit_combo.grid(row=1, column=5, padx=5, pady=5, sticky="w")
+        self.unit_combo.bind("<<ComboboxSelected>>", self.update_unit_labels)
         # =========================
         # Item Entry Section
         # =========================
@@ -56,13 +80,26 @@ class BinPackingGUI:
         self.item_updown = tk.BooleanVar(value=True)
 
         self._add_labeled_entry(item_frame, "Name", self.item_name, 0, 0)
-        self._add_labeled_entry(item_frame, "Width", self.item_w, 0, 2)
-        self._add_labeled_entry(item_frame, "Height", self.item_h, 0, 4)
-        self._add_labeled_entry(item_frame, "Depth", self.item_d, 0, 6)
-        self._add_labeled_entry(item_frame, "Weight", self.item_weight, 1, 0)
+
+        self.item_width_label = ttk.Label(item_frame, text="Width (in)")
+        self.item_width_label.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        ttk.Entry(item_frame, textvariable=self.item_w, width=14).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+
+        self.item_height_label = ttk.Label(item_frame, text="Height (in)")
+        self.item_height_label.grid(row=0, column=4, padx=5, pady=5, sticky="e")
+        ttk.Entry(item_frame, textvariable=self.item_h, width=14).grid(row=0, column=5, padx=5, pady=5, sticky="w")
+
+        self.item_depth_label = ttk.Label(item_frame, text="Depth (in)")
+        self.item_depth_label.grid(row=0, column=6, padx=5, pady=5, sticky="e")
+        ttk.Entry(item_frame, textvariable=self.item_d, width=14).grid(row=0, column=7, padx=5, pady=5, sticky="w")
+
+        self.item_weight_label = ttk.Label(item_frame, text="Weight (lb)")
+        self.item_weight_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        ttk.Entry(item_frame, textvariable=self.item_weight, width=14).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+
         self._add_labeled_entry(item_frame, "Qty", self.item_qty, 1, 2)
         self._add_labeled_entry(item_frame, "Color", self.item_color, 1, 4)
-
+        
         ttk.Checkbutton(
             item_frame,
             text="Can rotate upside down",
@@ -129,6 +166,26 @@ class BinPackingGUI:
 
         self.results = scrolledtext.ScrolledText(results_frame, wrap="word", height=14)
         self.results.pack(fill="both", expand=True)
+        
+        self.update_unit_labels()
+
+    def update_unit_labels(self, event=None):
+        if self.unit_system.get() == "Metric (cm)":
+            dim_unit = "cm"
+            weight_unit = "kg"
+        else:
+            dim_unit = "in"
+            weight_unit = "lb"
+
+        self.bin_width_label.config(text=f"Width ({dim_unit})")
+        self.bin_height_label.config(text=f"Height ({dim_unit})")
+        self.bin_depth_label.config(text=f"Depth ({dim_unit})")
+        self.bin_weight_label.config(text=f"Max Weight ({weight_unit})")
+
+        self.item_width_label.config(text=f"Width ({dim_unit})")
+        self.item_height_label.config(text=f"Height ({dim_unit})")
+        self.item_depth_label.config(text=f"Depth ({dim_unit})")
+        self.item_weight_label.config(text=f"Weight ({weight_unit})")
 
     def _add_labeled_entry(self, parent, label, var, row, col):
         ttk.Label(parent, text=label).grid(row=row, column=col, padx=5, pady=5, sticky="e")
@@ -326,6 +383,7 @@ class BinPackingGUI:
             data = {
                 "bin": {
                     "name": self.bin_name.get().strip(),
+                    "units": self.unit_system.get(),
                     "WHD": [
                         float(self.bin_w.get()),
                         float(self.bin_h.get()),
@@ -389,6 +447,9 @@ class BinPackingGUI:
             self.bin_d.set(str(whd[2]))
             self.bin_weight.set(str(bin_data.get("max_weight", 1000)))
             self.bin_corner.set(str(bin_data.get("corner", 0)))
+            
+            self.unit_system.set(str(bin_data.get("units", "Imperial (in)")))
+            self.update_unit_labels()
 
             self.clear_all_items()
 

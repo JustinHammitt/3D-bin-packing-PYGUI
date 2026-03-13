@@ -10,3 +10,4 @@ setup.py
 venv
 debug.log
 test*
+*.pyc

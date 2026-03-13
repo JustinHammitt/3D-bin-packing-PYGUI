@@ -1,5 +1,5 @@
-# python 3.6.5
-numpy == 1.19.5
-matplotlib == 3.3.4
-Flask==2.2.5
-Flask-Cors==3.0.10
+numpy>=1.24
+matplotlib>=3.7
+Flask>=2.3
+Flask-Cors>=4.0
+pyinstaller>=6.0

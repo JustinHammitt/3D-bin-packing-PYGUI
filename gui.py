@@ -39,17 +39,17 @@ class BinPackingGUI:
 
         self._add_labeled_entry(bin_frame, "Name", self.bin_name, 0, 0)
 
+        self.bin_length_label = ttk.Label(bin_frame, text="Length (in)")
+        self.bin_length_label.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        ttk.Entry(bin_frame, textvariable=self.bin_d, width=14).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+
         self.bin_width_label = ttk.Label(bin_frame, text="Width (in)")
-        self.bin_width_label.grid(row=0, column=2, padx=5, pady=5, sticky="e")
-        ttk.Entry(bin_frame, textvariable=self.bin_w, width=14).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+        self.bin_width_label.grid(row=0, column=4, padx=5, pady=5, sticky="e")
+        ttk.Entry(bin_frame, textvariable=self.bin_w, width=14).grid(row=0, column=5, padx=5, pady=5, sticky="w")
 
         self.bin_height_label = ttk.Label(bin_frame, text="Height (in)")
-        self.bin_height_label.grid(row=0, column=4, padx=5, pady=5, sticky="e")
-        ttk.Entry(bin_frame, textvariable=self.bin_h, width=14).grid(row=0, column=5, padx=5, pady=5, sticky="w")
-
-        self.bin_depth_label = ttk.Label(bin_frame, text="Depth (in)")
-        self.bin_depth_label.grid(row=0, column=6, padx=5, pady=5, sticky="e")
-        ttk.Entry(bin_frame, textvariable=self.bin_d, width=14).grid(row=0, column=7, padx=5, pady=5, sticky="w")
+        self.bin_height_label.grid(row=0, column=6, padx=5, pady=5, sticky="e")
+        ttk.Entry(bin_frame, textvariable=self.bin_h, width=14).grid(row=0, column=7, padx=5, pady=5, sticky="w")
 
         self.bin_weight_label = ttk.Label(bin_frame, text="Max Weight (lb)")
         self.bin_weight_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
@@ -91,42 +91,55 @@ class BinPackingGUI:
 
         self._add_labeled_entry(item_frame, "Name", self.item_name, 0, 0)
 
+        self.item_length_label = ttk.Label(item_frame, text="Length (in)")
+        self.item_length_label.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        ttk.Entry(item_frame, textvariable=self.item_d, width=14).grid(
+            row=0, column=3, padx=5, pady=5, sticky="w"
+        )
+
         self.item_width_label = ttk.Label(item_frame, text="Width (in)")
-        self.item_width_label.grid(row=0, column=2, padx=5, pady=5, sticky="e")
-        ttk.Entry(item_frame, textvariable=self.item_w, width=14).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+        self.item_width_label.grid(row=0, column=4, padx=5, pady=5, sticky="e")
+        ttk.Entry(item_frame, textvariable=self.item_w, width=14).grid(
+            row=0, column=5, padx=5, pady=5, sticky="w"
+        )
 
         self.item_height_label = ttk.Label(item_frame, text="Height (in)")
-        self.item_height_label.grid(row=0, column=4, padx=5, pady=5, sticky="e")
-        ttk.Entry(item_frame, textvariable=self.item_h, width=14).grid(row=0, column=5, padx=5, pady=5, sticky="w")
-
-        self.item_depth_label = ttk.Label(item_frame, text="Depth (in)")
-        self.item_depth_label.grid(row=0, column=6, padx=5, pady=5, sticky="e")
-        ttk.Entry(item_frame, textvariable=self.item_d, width=14).grid(row=0, column=7, padx=5, pady=5, sticky="w")
+        self.item_height_label.grid(row=0, column=6, padx=5, pady=5, sticky="e")
+        ttk.Entry(item_frame, textvariable=self.item_h, width=14).grid(
+            row=0, column=7, padx=5, pady=5, sticky="w"
+        )
 
         self.item_weight_label = ttk.Label(item_frame, text="Weight (lb)")
         self.item_weight_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
-        ttk.Entry(item_frame, textvariable=self.item_weight, width=14).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        ttk.Entry(item_frame, textvariable=self.item_weight, width=14).grid(
+            row=1, column=1, padx=5, pady=5, sticky="w"
+        )
 
-        ttk.Label(item_frame, text="Qty").grid(row=1, column=2, padx=5, pady=5, sticky="e")
-        self.item_qty_entry = ttk.Entry(item_frame, textvariable=self.item_qty, width=14)
-        self.item_qty_entry.grid(row=1, column=3, padx=5, pady=5, sticky="w")
+        qty_frame = ttk.Frame(item_frame)
+        qty_frame.grid(row=1, column=2, columnspan=3, padx=5, pady=5, sticky="w")
 
         ttk.Checkbutton(
-            item_frame,
+            qty_frame,
             text="Fill to Max",
             variable=self.item_fill_to_max,
             command=self.on_fill_to_max_toggle,
-        ).grid(row=1, column=4, padx=5, pady=5, sticky="w")
+        ).pack(side="left", padx=(0, 8))
 
-        self._add_labeled_entry(item_frame, "Color", self.item_color, 1, 5)
-        self._add_labeled_entry(item_frame, "Qty", self.item_qty, 1, 2)
-        self._add_labeled_entry(item_frame, "Color", self.item_color, 1, 4)
-        
+        ttk.Label(qty_frame, text="Qty").pack(side="left", padx=(0, 4))
+
+        self.item_qty_entry = ttk.Entry(qty_frame, textvariable=self.item_qty, width=8)
+        self.item_qty_entry.pack(side="left")
+
+        ttk.Label(item_frame, text="Color").grid(row=1, column=4, padx=(2, 4), pady=5, sticky="e")
+        ttk.Entry(item_frame, textvariable=self.item_color, width=14).grid(
+            row=1, column=5, padx=5, pady=5, sticky="w"
+        )
+
         ttk.Checkbutton(
             item_frame,
             text="Can rotate upside down",
             variable=self.item_updown
-        ).grid(row=1, column=6, padx=5, pady=5, sticky="w")
+        ).grid(row=1, column=7, padx=5, pady=5, sticky="w")
 
         ttk.Button(item_frame, text="Add Item", command=self.add_item).grid(
             row=2, column=0, padx=5, pady=10, sticky="w"
@@ -141,6 +154,7 @@ class BinPackingGUI:
             row=2, column=3, padx=5, pady=10, sticky="w"
         )
 
+    
         # =========================
         # Item List Section
         # =========================
@@ -297,8 +311,7 @@ class BinPackingGUI:
                 "end",
                 values=(
                     item["name"],
-                    f"{display_w} x {display_h} x {display_d}",
-                    display_weight,
+                                f"{display_d} x {display_w} x {display_h}",                                                display_weight,
                     "AUTO" if item.get("fill_to_max", False) else item["qty"],
                     item["color"],
                     item["updown"],
@@ -329,14 +342,14 @@ class BinPackingGUI:
             dim_unit = "in"
             weight_unit = "lb"
 
+        self.bin_length_label.config(text=f"Length ({dim_unit})")
         self.bin_width_label.config(text=f"Width ({dim_unit})")
         self.bin_height_label.config(text=f"Height ({dim_unit})")
-        self.bin_depth_label.config(text=f"Depth ({dim_unit})")
         self.bin_weight_label.config(text=f"Max Weight ({weight_unit})")
 
+        self.item_length_label.config(text=f"Length ({dim_unit})")
         self.item_width_label.config(text=f"Width ({dim_unit})")
         self.item_height_label.config(text=f"Height ({dim_unit})")
-        self.item_depth_label.config(text=f"Depth ({dim_unit})")
         self.item_weight_label.config(text=f"Weight ({weight_unit})")
 
         self.refresh_item_tree()
@@ -369,7 +382,6 @@ class BinPackingGUI:
 
             self.items.append(item)
             self.refresh_item_tree()
-            self.clear_item_fields()
             self.last_box = None
 
         except Exception as exc:
@@ -385,7 +397,7 @@ class BinPackingGUI:
         self.item_color.set("#4F81BD")
         self.item_updown.set(True)
         self.item_fill_to_max.set(False)
-        self.item_qty_entry.config(state="normal")
+        self.item_qty_entry.state(["!disabled"])
 
     def remove_selected(self):
         selected = self.tree.selection()
@@ -512,7 +524,7 @@ class BinPackingGUI:
 
         lines = [
             f"Container: {box.partno}",
-            f"Size: {disp_box_w} x {disp_box_h} x {disp_box_d}",
+            f"Size (L x W x H): {disp_box_d} x {disp_box_w} x {disp_box_h}",
             f"Max Weight: {disp_box_weight}",
             "",
             f"Fitted Items: {fitted}",
@@ -528,7 +540,7 @@ class BinPackingGUI:
             disp_h = self.fmt_display(self.metric_to_display_dim(item.height))
             disp_d = self.fmt_display(self.metric_to_display_dim(item.depth))
             lines.append(
-                f"{item.partno} | pos={item.position} | size={disp_w}x{disp_h}x{disp_d} | rot={item.rotation_type}"
+                f"{item.partno} | pos={item.position} | size(LxWxH)={disp_d}x{disp_w}x{disp_h} | rot={item.rotation_type}"
             )
 
         lines.append("")
@@ -538,7 +550,7 @@ class BinPackingGUI:
             disp_w = self.fmt_display(self.metric_to_display_dim(item.width))
             disp_h = self.fmt_display(self.metric_to_display_dim(item.height))
             disp_d = self.fmt_display(self.metric_to_display_dim(item.depth))
-            lines.append(f"{item.partno} | size={disp_w}x{disp_h}x{disp_d}")
+            lines.append(f"{item.partno} | size(LxWxH)={disp_d}x{disp_w}x{disp_h}")
 
         self.results.delete("1.0", tk.END)
         self.results.insert(tk.END, "\n".join(lines))
@@ -563,12 +575,11 @@ class BinPackingGUI:
 
     def on_fill_to_max_toggle(self):
         if self.item_fill_to_max.get():
-            self.item_qty.set("1")
-            self.item_qty_entry.config(state="disabled")
+            self.item_qty.set("")
+            self.item_qty_entry.state(["disabled"])
         else:
-            self.item_qty_entry.config(state="normal")
-            if self.item_qty.get().strip().lower() == "auto":
-                self.item_qty.set("1")
+            self.item_qty_entry.state(["!disabled"])
+            self.item_qty.set("1")
 
     def _get_container_config(self):
         return {
@@ -653,8 +664,12 @@ class BinPackingGUI:
             self.bin_w.set(self.fmt_display(self.metric_to_display_dim(whd[0])))
             self.bin_h.set(self.fmt_display(self.metric_to_display_dim(whd[1])))
             self.bin_d.set(self.fmt_display(self.metric_to_display_dim(whd[2])))
-            self.bin_weight.set(self.fmt_display(self.metric_to_display_weight(bin_data.get("max_weight", 1000))))
-            self.bin_corner.set(self.fmt_display(self.metric_to_display_dim(bin_data.get("corner", 0))))
+            self.bin_weight.set(
+                self.fmt_display(self.metric_to_display_weight(bin_data.get("max_weight", 1000)))
+            )
+            self.bin_corner.set(
+                self.fmt_display(self.metric_to_display_dim(bin_data.get("corner", 0)))
+            )
 
             self.clear_all_items()
 
@@ -672,6 +687,7 @@ class BinPackingGUI:
                     "qty": int(item.get("qty", 1)),
                     "color": str(item.get("color", "#4F81BD")),
                     "updown": bool(item.get("updown", True)),
+                    "fill_to_max": bool(item.get("fill_to_max", False)),
                 }
 
                 self.items.append(normalized_item)
@@ -693,9 +709,10 @@ class BinPackingGUI:
                     self.display_to_metric_dim(self.item_d.get()),
                 ],
                 "weight": self.display_to_metric_weight(self.item_weight.get()),
-                "qty": int(self.item_qty.get()),
+                "qty": 1 if self.item_fill_to_max.get() else int(self.item_qty.get()),
                 "color": self.item_color.get().strip() or "#4F81BD",
                 "updown": self.item_updown.get(),
+                "fill_to_max": self.item_fill_to_max.get(),
             }
 
             if not item_data["name"]:
@@ -739,10 +756,19 @@ class BinPackingGUI:
             self.item_w.set(self.fmt_display(self.metric_to_display_dim(whd[0])))
             self.item_h.set(self.fmt_display(self.metric_to_display_dim(whd[1])))
             self.item_d.set(self.fmt_display(self.metric_to_display_dim(whd[2])))
-            self.item_weight.set(self.fmt_display(self.metric_to_display_weight(item_data.get("weight", 1))))
-            self.item_qty.set(str(item_data.get("qty", 1)))
+            self.item_weight.set(
+                self.fmt_display(self.metric_to_display_weight(item_data.get("weight", 1)))
+            )
             self.item_color.set(str(item_data.get("color", "#4F81BD")))
             self.item_updown.set(bool(item_data.get("updown", True)))
+            self.item_fill_to_max.set(bool(item_data.get("fill_to_max", False)))
+
+            if self.item_fill_to_max.get():
+                self.item_qty.set("")
+            else:
+                self.item_qty.set(str(item_data.get("qty", 1)))
+
+            self.on_fill_to_max_toggle()
 
             self.results.delete("1.0", tk.END)
             self.results.insert(tk.END, f"Loaded item from:\n{file_path}")

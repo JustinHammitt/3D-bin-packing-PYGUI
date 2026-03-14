@@ -26,11 +26,11 @@ Built in Python using:
 ✔ 3D visualization of packed items  
 ✔ Export layouts to JSON  
 ✔ Windows EXE build via GitHub Actions  
+✔ v1.1  Fill to Max
 
 # Roadmap (Subject to change)
 
 - Todo: Seperate funcs not gui relatd from gui.py 
-- v1.1  Fill to Max
 - v1.2  Item Padding
 - v1.3  Container Padding
 - v1.4  Multi-item Fill to Max

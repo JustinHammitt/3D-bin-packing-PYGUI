@@ -2,10 +2,12 @@ import json
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext, filedialog
 
-from py3dbp import Packer, Bin, Item, Painter
+from py3dbp import Painter
 
-from fill_to_capacity import fill_single_item_to_capacity
 from services.unit_service import UnitService
+from services.save_object_service import SaveObjectService
+from services.packing_service import PackingService
+from services.result_service import ResultService
 
 class BinPackingGUI:
     def __init__(self, root):
@@ -393,137 +395,39 @@ class BinPackingGUI:
         self.results.insert(tk.END, "Loaded sample items.")
 
     def _get_container_config(self):
-        return {
-            "name": self.bin_name.get().strip() or "MainBin",
-            "WHD": [
-                self.display_to_metric_dim(self.bin_w.get()),
-                self.display_to_metric_dim(self.bin_h.get()),
-                self.display_to_metric_dim(self.bin_d.get()),
-            ],
-            "max_weight": self.display_to_metric_weight(self.bin_weight.get()),
-            "corner": self.display_to_metric_dim(self.bin_corner.get() or 0),
-        }
+        return PackingService.get_container_config(
+            name=self.bin_name.get().strip() or "MainBin",
+            width=self.display_to_metric_dim(self.bin_w.get()),
+            height=self.display_to_metric_dim(self.bin_h.get()),
+            depth=self.display_to_metric_dim(self.bin_d.get()),
+            max_weight=self.display_to_metric_weight(self.bin_weight.get()),
+            corner=self.display_to_metric_dim(self.bin_corner.get() or 0),
+        )
 
     def run_packing(self):
         try:
-            if not self.items:
-                raise ValueError("Add at least one item before packing.")
+            PackingService.validate_items(self.items)
 
-            auto_items = [item for item in self.items if item.get("fill_to_max", False)]
-            if len(auto_items) > 1:
-                raise ValueError("Only one 'Fill to Max' item is supported right now.")
+            container = self._get_container_config()
+            PackingService.apply_fill_to_max(container, self.items)
 
-            if len(self.items) > 1 and auto_items:
-                raise ValueError(
-                    "'Fill to Max' currently works only when it is the only item in the list."
-                )
-
-            if auto_items:
-                container = self._get_container_config()
-                auto_item = auto_items[0]
-                result = fill_single_item_to_capacity(
-                    container,
-                    dict(auto_item),
-                    max_search_qty=10000,
-                    bigger_first=True,
-                    distribute_items=False,
-                    fix_point=True,
-                    check_stable=False,
-                    support_surface_ratio=0.75,
-                    number_of_decimals=0,
-                )
-                auto_item["qty"] = int(result.fitted_count)
-
-            packer = Packer()
-            box = Bin(
-                partno=self.bin_name.get().strip() or "MainBin",
-                WHD=(
-                    self.display_to_metric_dim(self.bin_w.get()),
-                    self.display_to_metric_dim(self.bin_h.get()),
-                    self.display_to_metric_dim(self.bin_d.get()),
-                ),
-                max_weight=self.display_to_metric_weight(self.bin_weight.get()),
-                corner=self.display_to_metric_dim(self.bin_corner.get()),
-                put_type=0,
-            )
-            packer.addBin(box)
-
-            for item in self.items:
-                for i in range(item["qty"]):
-                    packer.addItem(
-                        Item(
-                            partno=f"{item['name']}-{i + 1}",
-                            name=item["name"],
-                            typeof="cube",
-                            WHD=item["WHD"],
-                            weight=item["weight"],
-                            level=1,
-                            loadbear=100,
-                            updown=item["updown"],
-                            color=item["color"],
-                        )
-                    )
-
-            packer.pack(
-                bigger_first=True,
-                distribute_items=False,
-                fix_point=True,
-                check_stable=False,
-                support_surface_ratio=0.75,
-                number_of_decimals=0,
-            )
-
-            self.last_box = packer.bins[0]
+            self.last_box = PackingService.pack(container, self.items)
             self.refresh_item_tree()
             self.render_results(self.last_box)
 
         except Exception as exc:
             messagebox.showerror("Packing Error", str(exc))
-            
+
     def render_results(self, box):
-        fitted = len(box.items)
-        unfitted = len(box.unfitted_items)
-        used_volume = sum(float(i.width) * float(i.height) * float(i.depth) for i in box.items)
-        total_volume = float(box.width) * float(box.height) * float(box.depth)
-        utilization = (used_volume / total_volume * 100) if total_volume else 0
-
-        disp_box_w = self.fmt_display(self.metric_to_display_dim(box.width))
-        disp_box_h = self.fmt_display(self.metric_to_display_dim(box.height))
-        disp_box_d = self.fmt_display(self.metric_to_display_dim(box.depth))
-        disp_box_weight = self.fmt_display(self.metric_to_display_weight(box.max_weight))
-
-        lines = [
-            f"Container: {box.partno}",
-            f"Size: {disp_box_w} x {disp_box_h} x {disp_box_d}",
-            f"Max Weight: {disp_box_weight}",
-            "",
-            f"Fitted Items: {fitted}",
-            f"Unfitted Items: {unfitted}",
-            f"Space Utilization: {utilization:.2f}%",
-            f"Gravity Distribution: {box.gravity}",
-            "",
-            "=== FITTED ===",
-        ]
-
-        for item in box.items:
-            disp_w = self.fmt_display(self.metric_to_display_dim(item.width))
-            disp_h = self.fmt_display(self.metric_to_display_dim(item.height))
-            disp_d = self.fmt_display(self.metric_to_display_dim(item.depth))
-            lines.append(
-                f"{item.partno} | pos={item.position} | size={disp_w}x{disp_h}x{disp_d} | rot={item.rotation_type}"
-            )
-
-        lines.append("")
-        lines.append("=== UNFITTED ===")
-
-        for item in box.unfitted_items:
-            disp_w = self.fmt_display(self.metric_to_display_dim(item.width))
-            disp_h = self.fmt_display(self.metric_to_display_dim(item.height))
-            disp_d = self.fmt_display(self.metric_to_display_dim(item.depth))
-            lines.append(f"{item.partno} | size={disp_w}x{disp_h}x{disp_d}")
+        results_text = ResultService.build_results_text(
+            box,
+            dim_formatter=self.metric_to_display_dim,
+            weight_formatter=self.metric_to_display_weight,
+            number_formatter=self.fmt_display,
+        )
 
         self.results.delete("1.0", tk.END)
-        self.results.insert(tk.END, "\n".join(lines))
+        self.results.insert(tk.END, results_text)
 
     def show_plot(self):
         if not self.last_box:
@@ -541,29 +445,15 @@ class BinPackingGUI:
 
     def export_json(self):
         try:
-            data = {
-                "bin": {
-                    "name": self.bin_name.get().strip(),
-                    "WHD": [
-                        self.display_to_metric_dim(self.bin_w.get()),
-                        self.display_to_metric_dim(self.bin_h.get()),
-                        self.display_to_metric_dim(self.bin_d.get()),
-                    ],
-                    "max_weight": self.display_to_metric_weight(self.bin_weight.get()),
-                    "corner": self.display_to_metric_dim(self.bin_corner.get()),
-                },
-                "items": [
-                    {
-                        "name": item["name"],
-                        "WHD": list(item["WHD"]),
-                        "weight": item["weight"],
-                        "qty": item["qty"],
-                        "color": item["color"],
-                        "updown": item["updown"],
-                    }
-                    for item in self.items
-                ],
-            }
+            data = SaveObjectService.build_box_data(
+                bin_name=self.bin_name.get().strip(),
+                bin_w=self.display_to_metric_dim(self.bin_w.get()),
+                bin_h=self.display_to_metric_dim(self.bin_h.get()),
+                bin_d=self.display_to_metric_dim(self.bin_d.get()),
+                bin_weight=self.display_to_metric_weight(self.bin_weight.get()),
+                bin_corner=self.display_to_metric_dim(self.bin_corner.get()),
+                items=self.items,
+            )
 
             file_path = filedialog.asksaveasfilename(
                 title="Save Box Diagram",
@@ -575,15 +465,14 @@ class BinPackingGUI:
             if not file_path:
                 return
 
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
+            SaveObjectService.save_json_file(file_path, data)
 
             self.results.delete("1.0", tk.END)
             self.results.insert(tk.END, f"Saved box diagram to:\n{file_path}")
 
         except Exception as exc:
             messagebox.showerror("Export Error", f"Failed to save file:\n{exc}")
-
+    
     def load_json(self):
         file_path = filedialog.askopenfilename(
             title="Load Box Diagram",
@@ -594,39 +483,26 @@ class BinPackingGUI:
             return
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = SaveObjectService.load_json_file(file_path)
+            box_parts = SaveObjectService.extract_box_parts(data)
 
-            bin_data = data.get("bin", {})
-            items_data = data.get("items", [])
-            whd = bin_data.get("WHD", [100, 100, 100])
+            whd = box_parts["bin_whd"]
 
-            self.bin_name.set(str(bin_data.get("name", "MainBin")))
+            self.bin_name.set(box_parts["bin_name"])
             self.bin_w.set(self.fmt_display(self.metric_to_display_dim(whd[0])))
             self.bin_h.set(self.fmt_display(self.metric_to_display_dim(whd[1])))
             self.bin_d.set(self.fmt_display(self.metric_to_display_dim(whd[2])))
-            self.bin_weight.set(self.fmt_display(self.metric_to_display_weight(bin_data.get("max_weight", 1000))))
-            self.bin_corner.set(self.fmt_display(self.metric_to_display_dim(bin_data.get("corner", 0))))
+            self.bin_weight.set(
+                self.fmt_display(self.metric_to_display_weight(box_parts["bin_weight"]))
+            )
+            self.bin_corner.set(
+                self.fmt_display(self.metric_to_display_dim(box_parts["bin_corner"]))
+            )
 
             self.clear_all_items()
 
-            for item in items_data:
-                item_whd = item.get("WHD", [0, 0, 0])
-
-                normalized_item = {
-                    "name": str(item.get("name", "")).strip(),
-                    "WHD": (
-                        float(item_whd[0]),
-                        float(item_whd[1]),
-                        float(item_whd[2]),
-                    ),
-                    "weight": float(item.get("weight", 1)),
-                    "qty": int(item.get("qty", 1)),
-                    "color": str(item.get("color", "#4F81BD")),
-                    "updown": bool(item.get("updown", True)),
-                }
-
-                self.items.append(normalized_item)
+            for item_data in box_parts["items"]:
+                self.items.append(SaveObjectService.normalize_loaded_item(item_data))
 
             self.refresh_item_tree()
             self.run_packing()
@@ -637,19 +513,17 @@ class BinPackingGUI:
 
     def save_item_json(self):
         try:
-            item_data = {
-                "name": self.item_name.get().strip(),
-                "WHD": [
-                    self.display_to_metric_dim(self.item_w.get()),
-                    self.display_to_metric_dim(self.item_h.get()),
-                    self.display_to_metric_dim(self.item_d.get()),
-                ],
-                "weight": self.display_to_metric_weight(self.item_weight.get()),
-                "qty": int(self.item_qty.get()),
-                "color": self.item_color.get().strip() or "#4F81BD",
-                "updown": self.item_updown.get(),
-                "fill_to_max": self.item_fill_to_max.get(),
-            }
+            item_data = SaveObjectService.build_item_data(
+                name=self.item_name.get().strip(),
+                w=self.display_to_metric_dim(self.item_w.get()),
+                h=self.display_to_metric_dim(self.item_h.get()),
+                d=self.display_to_metric_dim(self.item_d.get()),
+                weight=self.display_to_metric_weight(self.item_weight.get()),
+                qty=1 if self.item_fill_to_max.get() else int(self.item_qty.get()),
+                color=self.item_color.get().strip() or "#4F81BD",
+                updown=self.item_updown.get(),
+                fill_to_max=self.item_fill_to_max.get(),
+            )
 
             if not item_data["name"]:
                 raise ValueError("Item name is required.")
@@ -664,8 +538,7 @@ class BinPackingGUI:
             if not file_path:
                 return
 
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(item_data, f, indent=2)
+            SaveObjectService.save_json_file(file_path, item_data)
 
             self.results.delete("1.0", tk.END)
             self.results.insert(tk.END, f"Saved item to:\n{file_path}")
@@ -683,27 +556,25 @@ class BinPackingGUI:
             return
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                item_data = json.load(f)
+            item_data = SaveObjectService.load_json_file(file_path)
+            normalized_item = SaveObjectService.normalize_loaded_item(item_data)
+            whd = normalized_item["WHD"]
 
-            whd = item_data.get("WHD", [0, 0, 0])
-
-            self.item_name.set(str(item_data.get("name", "")))
+            self.item_name.set(normalized_item["name"])
             self.item_w.set(self.fmt_display(self.metric_to_display_dim(whd[0])))
             self.item_h.set(self.fmt_display(self.metric_to_display_dim(whd[1])))
             self.item_d.set(self.fmt_display(self.metric_to_display_dim(whd[2])))
-            self.item_qty.set(str(item_data.get("qty", 1)))
             self.item_weight.set(
-                self.fmt_display(self.metric_to_display_weight(item_data.get("weight", 1)))
+                self.fmt_display(self.metric_to_display_weight(normalized_item["weight"]))
             )
-            self.item_color.set(str(item_data.get("color", "#4F81BD")))
-            self.item_updown.set(bool(item_data.get("updown", True)))
-
+            self.item_color.set(normalized_item["color"])
+            self.item_updown.set(normalized_item["updown"])
+            self.item_fill_to_max.set(normalized_item["fill_to_max"])
 
             if self.item_fill_to_max.get():
                 self.item_qty.set("")
             else:
-                self.item_qty.set(str(item_data.get("qty", 1)))
+                self.item_qty.set(str(normalized_item["qty"]))
 
             self.on_fill_to_max_toggle()
 

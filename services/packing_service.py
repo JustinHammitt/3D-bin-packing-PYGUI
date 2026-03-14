@@ -1,51 +1,99 @@
 from py3dbp import Packer, Bin, Item
 
-from models import ContainerSpec, ItemSpec
+from services.fill_to_capacity_service import fill_single_item_to_capacity
 
 
-def build_bin(spec: ContainerSpec) -> Bin:
-    return Bin(
-        partno=spec.name,
-        WHD=(spec.width, spec.height, spec.depth),
-        max_weight=spec.max_weight,
-        corner=spec.corner,
-    )
+class PackingService:
+    @staticmethod
+    def get_container_config(name, width, height, depth, max_weight, corner):
+        return {
+            "name": name or "MainBin",
+            "WHD": [width, height, depth],
+            "max_weight": max_weight,
+            "corner": corner,
+        }
 
+    @staticmethod
+    def validate_items(items):
+        if not items:
+            raise ValueError("Add at least one item before packing.")
 
-def build_items(items: list[ItemSpec]) -> list[Item]:
-    built: list[Item] = []
+        auto_items = [item for item in items if item.get("fill_to_max", False)]
 
-    for spec in items:
-        for i in range(spec.quantity):
-            built.append(
-                Item(
-                    partno=f"{spec.name}-{i + 1}",
-                    name=spec.name,
-                    typeof="cube",
-                    WHD=(spec.width, spec.height, spec.depth),
-                    weight=spec.weight,
-                    level=1,
-                    loadbear=100,
-                    updown=spec.updown,
-                    color=spec.color,
-                )
+        if len(auto_items) > 1:
+            raise ValueError("Only one 'Fill to Max' item is supported right now.")
+
+        if len(items) > 1 and auto_items:
+            raise ValueError(
+                "'Fill to Max' currently works only when it is the only item in the list."
             )
 
-    return built
+        return auto_items
 
+    @staticmethod
+    def apply_fill_to_max(container, items):
+        auto_items = [item for item in items if item.get("fill_to_max", False)]
+        if not auto_items:
+            return items
 
-def run_packing(container: ContainerSpec, items: list[ItemSpec], bigger_first: bool = True, distribute_items: bool = False):
-    packer = Packer()
+        auto_item = auto_items[0]
+        result = fill_single_item_to_capacity(
+            container,
+            dict(auto_item),
+            max_search_qty=10000,
+            bigger_first=True,
+            distribute_items=False,
+            fix_point=True,
+            check_stable=False,
+            support_surface_ratio=0.75,
+            number_of_decimals=0,
+        )
+        auto_item["qty"] = int(result.fitted_count)
+        return items
 
-    box = build_bin(container)
-    packer.addBin(box)
+    @staticmethod
+    def build_bin(container):
+        return Bin(
+            partno=container["name"],
+            WHD=tuple(container["WHD"]),
+            max_weight=container["max_weight"],
+            corner=container["corner"],
+            put_type=0,
+        )
 
-    for item in build_items(items):
-        packer.addItem(item)
+    @staticmethod
+    def add_items_to_packer(packer, items):
+        for item in items:
+            for i in range(item["qty"]):
+                packer.addItem(
+                    Item(
+                        partno=f"{item['name']}-{i + 1}",
+                        name=item["name"],
+                        typeof="cube",
+                        WHD=item["WHD"],
+                        weight=item["weight"],
+                        level=1,
+                        loadbear=100,
+                        updown=item["updown"],
+                        color=item["color"],
+                    )
+                )
 
-    packer.pack(
-        bigger_first=bigger_first,
-        distribute_items=distribute_items,
-    )
+    @staticmethod
+    def pack(container, items):
+        packer = Packer()
+        box = PackingService.build_bin(container)
+        packer.addBin(box)
 
-    return box
+        PackingService.add_items_to_packer(packer, items)
+
+        packer.pack(
+            bigger_first=True,
+            distribute_items=False,
+            fix_point=True,
+            check_stable=False,
+            support_surface_ratio=0.75,
+            number_of_decimals=0,
+        )
+
+        return packer.bins[0]

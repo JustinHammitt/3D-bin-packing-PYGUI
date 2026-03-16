@@ -1,4 +1,3 @@
-import json
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext, filedialog
 
@@ -8,6 +7,8 @@ from services.unit_service import UnitService
 from services.save_object_service import SaveObjectService
 from services.packing_service import PackingService
 from services.result_service import ResultService
+from services.object_builder_service import ObjectBuilderService
+from services.render_service import RenderService
 
 class BinPackingGUI:
     def __init__(self, root):
@@ -253,23 +254,14 @@ class BinPackingGUI:
             self.tree.delete(row)
 
         for item in self.items:
-            display_w = self.fmt_display(self.metric_to_display_dim(item["WHD"][0]))
-            display_h = self.fmt_display(self.metric_to_display_dim(item["WHD"][1]))
-            display_d = self.fmt_display(self.metric_to_display_dim(item["WHD"][2]))
-            display_weight = self.fmt_display(self.metric_to_display_weight(item["weight"]))
-
-            self.tree.insert(
-                "",
-                "end",
-                values=(
-                    item["name"],
-                    f"{display_w} x {display_h} x {display_d}",
-                    display_weight,
-                    "AUTO" if item.get("fill_to_max", False) else item["qty"],
-                    item["color"],
-                    item["updown"],
-                ),
+            row_values = RenderService.build_item_tree_row(
+                item,
+                dim_formatter=self.metric_to_display_dim,
+                weight_formatter=self.metric_to_display_weight,
+                number_formatter=self.fmt_display,
             )
+
+            self.tree.insert("", "end", values=row_values)
 
     # =========================
     # Fill to max
@@ -322,22 +314,19 @@ class BinPackingGUI:
 
     def add_item(self):
         try:
-            item = {
-                "name": self.item_name.get().strip(),
-                "WHD": (
-                    self.display_to_metric_dim(self.item_w.get()),
-                    self.display_to_metric_dim(self.item_h.get()),
-                    self.display_to_metric_dim(self.item_d.get()),
-                ),
-                "weight": self.display_to_metric_weight(self.item_weight.get()),
-                "qty": 1 if self.item_fill_to_max.get() else int(self.item_qty.get()),
-                "color": self.item_color.get().strip() or "#4F81BD",
-                "updown": self.item_updown.get(),
-                "fill_to_max": self.item_fill_to_max.get(),
-            }
+            item = ObjectBuilderService.build_item(
+                name=self.item_name.get(),
+                width=self.display_to_metric_dim(self.item_w.get()),
+                height=self.display_to_metric_dim(self.item_h.get()),
+                depth=self.display_to_metric_dim(self.item_d.get()),
+                weight=self.display_to_metric_weight(self.item_weight.get()),
+                qty=1 if self.item_fill_to_max.get() else int(self.item_qty.get()),
+                color=self.item_color.get(),
+                updown=self.item_updown.get(),
+                fill_to_max=self.item_fill_to_max.get(),
+            )
 
-            if not item["name"]:
-                raise ValueError("Item name is required.")
+            ObjectBuilderService.validate_item(item)
 
             self.items.append(item)
             self.refresh_item_tree()
@@ -382,13 +371,7 @@ class BinPackingGUI:
 
     def load_sample_items(self):
         self.clear_all_items()
-        samples = [
-            {"name": "BoxA", "WHD": (20, 20, 20), "weight": 5, "qty": 3, "color": "#FF6666", "updown": True},
-            {"name": "BoxB", "WHD": (30, 20, 10), "weight": 4, "qty": 2, "color": "#66CC66", "updown": True},
-            {"name": "TallItem", "WHD": (15, 40, 15), "weight": 6, "qty": 1, "color": "#6699FF", "updown": False},
-        ]
-
-        self.items.extend(samples)
+        self.items.extend(ObjectBuilderService.build_sample_items())
         self.refresh_item_tree()
 
         self.results.delete("1.0", tk.END)

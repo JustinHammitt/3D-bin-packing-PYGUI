@@ -36,10 +36,8 @@ Big thanks to [ravhello](https://github.com/ravhello) for his original *unmerged
 ✔ 3D visualization of packed items  
 ✔ Export layouts to JSON  
 ✔ Windows EXE build via GitHub Actions  
-✔ v1.1  Fill to Max
-✔ v1.2 Major backend refactor and backend improvements
-- Seperated funcs not gui relatd from gui.py into services/*.py
-- integrate patches from ravhello 
+✔ v1.1  Fill to Max  
+✔ v1.2 Major backend refactor and backend improvements  
 
 ---
 

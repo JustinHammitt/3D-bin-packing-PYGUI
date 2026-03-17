@@ -9,6 +9,7 @@ from services.packing_service import PackingService
 from services.result_service import ResultService
 from services.object_builder_service import ObjectBuilderService
 from services.render_service import RenderService
+from services.validation_service import ValidationService
 
 class BinPackingGUI:
     def __init__(self, root):
@@ -312,18 +313,88 @@ class BinPackingGUI:
         ttk.Label(parent, text=label).grid(row=row, column=col, padx=5, pady=5, sticky="e")
         ttk.Entry(parent, textvariable=var, width=14).grid(row=row, column=col + 1, padx=5, pady=5, sticky="w")
 
+    # =========================
+    # Data Validation
+    # =========================
+ 
+    def _get_validated_item_data(self):
+        name = ValidationService.require_text(self.item_name.get(), "Item name")
+
+        width = ValidationService.require_float(
+            self.item_w.get(), "Item width", min_value=0, allow_zero=False
+        )
+        height = ValidationService.require_float(
+            self.item_h.get(), "Item height", min_value=0, allow_zero=False
+        )
+        length = ValidationService.require_float(
+            self.item_d.get(), "Item length", min_value=0, allow_zero=False
+        )
+        weight = ValidationService.require_float(
+            self.item_weight.get(), "Item weight", min_value=0, allow_zero=False
+        )
+
+        if self.item_fill_to_max.get():
+            qty = 1
+        else:
+            qty = ValidationService.require_int(
+                self.item_qty.get(), "Item quantity", min_value=1
+            )
+
+        return {
+            "name": name,
+            "width": self.display_to_metric_dim(width),
+            "height": self.display_to_metric_dim(height),
+            "depth": self.display_to_metric_dim(length),
+            "weight": self.display_to_metric_weight(weight),
+            "qty": qty,
+            "color": self.item_color.get(),
+            "updown": self.item_updown.get(),
+            "fill_to_max": self.item_fill_to_max.get(),
+        }
+
+    def _get_validated_container_values(self):
+        name = ValidationService.require_text(self.bin_name.get(), "Container name")
+
+        width = ValidationService.require_float(
+            self.bin_w.get(), "Container width", min_value=0, allow_zero=False
+        )
+        height = ValidationService.require_float(
+            self.bin_h.get(), "Container height", min_value=0, allow_zero=False
+        )
+        length = ValidationService.require_float(
+            self.bin_d.get(), "Container length", min_value=0, allow_zero=False
+        )
+        max_weight = ValidationService.require_float(
+            self.bin_weight.get(), "Container max weight", min_value=0, allow_zero=False
+        )
+        corner = ValidationService.require_float(
+            self.bin_corner.get(), "Container corner", min_value=0, allow_zero=True
+        )
+
+        return {
+            "name": name,
+            "width": self.display_to_metric_dim(width),
+            "height": self.display_to_metric_dim(height),
+            "depth": self.display_to_metric_dim(length),
+            "max_weight": self.display_to_metric_weight(max_weight),
+            "corner": self.display_to_metric_dim(corner),
+        }
+
+
     def add_item(self):
         try:
+            item_data = self._get_validated_item_data()
+
             item = ObjectBuilderService.build_item(
-                name=self.item_name.get(),
-                width=self.display_to_metric_dim(self.item_w.get()),
-                height=self.display_to_metric_dim(self.item_h.get()),
-                depth=self.display_to_metric_dim(self.item_d.get()),
-                weight=self.display_to_metric_weight(self.item_weight.get()),
-                qty=1 if self.item_fill_to_max.get() else int(self.item_qty.get()),
-                color=self.item_color.get(),
-                updown=self.item_updown.get(),
-                fill_to_max=self.item_fill_to_max.get(),
+                name=item_data["name"],
+                width=item_data["width"],
+                height=item_data["height"],
+                depth=item_data["depth"],
+                weight=item_data["weight"],
+                qty=item_data["qty"],
+                color=item_data["color"],
+                updown=item_data["updown"],
+                fill_to_max=item_data["fill_to_max"],
             )
 
             ObjectBuilderService.validate_item(item)
@@ -378,13 +449,15 @@ class BinPackingGUI:
         self.results.insert(tk.END, "Loaded sample items.")
 
     def _get_container_config(self):
+        values = self._get_validated_container_values()
+
         return PackingService.get_container_config(
-            name=self.bin_name.get().strip() or "MainBin",
-            width=self.display_to_metric_dim(self.bin_w.get()),
-            height=self.display_to_metric_dim(self.bin_h.get()),
-            depth=self.display_to_metric_dim(self.bin_d.get()),
-            max_weight=self.display_to_metric_weight(self.bin_weight.get()),
-            corner=self.display_to_metric_dim(self.bin_corner.get() or 0),
+            name=values["name"],
+            width=values["width"],
+            height=values["height"],
+            depth=values["depth"],
+            max_weight=values["max_weight"],
+            corner=values["corner"],
         )
 
     def run_packing(self):

@@ -37,16 +37,18 @@ Big thanks to [ravhello](https://github.com/ravhello) for his original contribut
 ✔ Export layouts to JSON  
 ✔ Windows EXE build via GitHub Actions  
 ✔ v1.1  Fill to Max
+✔ v1.2 Major backend refactor and backend improvements
+- Seperated funcs not gui relatd from gui.py into services/*.py
+- integrate patches from ravhello 
 
 ---
 
 # Roadmap (Subject to change)
 
-- Todo: Seperate funcs not gui relatd from gui.py 
-- v1.2  Item Padding
-- v1.3  Container Padding
-- v1.4  Multi-item Fill to Max
-- v1.5  Void Detection
+- v1.3  Item Padding
+- v1.4  Container Padding
+- v1.5  Multi-item Fill to Max
+- v1.6  Void Detection
 
 ---
 

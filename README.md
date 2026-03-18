@@ -14,10 +14,12 @@ Built in Python using:
 
 # [Releases](https://github.com/JustinHammitt/3D-bin-packing-PYGUI/releases)
 
-[v1.2.0 Core Improvements](https://github.com/JustinHammitt/SupaBoxPacker/releases/tag/v1.2.0)
-Big thanks to [ravhello](https://github.com/ravhello) for his original *unmerged* contributions to py3dbp/main.py
+[v1.2.1](https://github.com/JustinHammitt/SupaBoxPacker/releases/tag/v1.2.1) Stay tuned for patch b the report export is not very user friendly
 
 # Past Releases
+
+[v1.2.0 Core Improvements](https://github.com/JustinHammitt/SupaBoxPacker/releases/tag/v1.2.0)
+Big thanks to [ravhello](https://github.com/ravhello) for his original *unmerged* contributions to py3dbp/main.py
 
 [v1.1.0 Full Pack!](https://github.com/JustinHammitt/SupaBoxPacker/releases/tag/v1.1.0)
 
